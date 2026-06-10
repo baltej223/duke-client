@@ -88,19 +88,7 @@ Error: Key not found.
 
 ## Health Checking
 
-The client verifies node health using:
-
-```http
-GET /health
-```
-
-A node is considered healthy only if the response body equals:
-
-```txt
-OK
-```
-
----
+## The client verifies node health using db.checkHealth()
 
 ## Example
 
@@ -179,42 +167,3 @@ Promise<boolean>
 ```
 
 Throws if the operation fails.
-
----
-
-## Requirements
-
-The client expects the Duke cluster to expose:
-
-```http
-GET  /health
-GET  /get?key=<key>
-POST /put
-```
-
-### POST /put Body
-
-```json
-{
-  "key": "example",
-  "value": "data"
-}
-```
-
-### GET /get Response
-
-```json
-{
-  "found": true,
-  "value": "data"
-}
-```
-
-### Error Response
-
-```json
-{
-  "found": false,
-  "error": "KEY NOT FOUND"
-}
-```
