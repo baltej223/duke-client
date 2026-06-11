@@ -3,13 +3,9 @@
 A lightweight JavaScript client for interacting with a Duke distributed key-value cluster.
 
 ## Installation
-
-Copy `duke.js` into your project and import it:
-
-```js
-import Duke from "./duke.js";
+```bash
+npm install duke-client
 ```
-
 ## Usage
 
 ### Create a Client
