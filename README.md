@@ -47,7 +47,7 @@ The client checks the health of all configured nodes and stores only healthy one
 Store a key-value pair.
 
 ```js
-await duke.PUT("name", "Baltej");
+await duke.PUT("name", "Duke");
 ```
 
 Returns:
@@ -71,7 +71,7 @@ console.log(value);
 Output:
 
 ```txt
-Baltej
+Duke
 ```
 
 If the key does not exist:
