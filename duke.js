@@ -94,50 +94,77 @@ export default class Duke {
   async GET(key) {
     this.check();
 
-    const url = dukeToHttp(
-      this.chooseRandomWorkingUrl(),
-    );
+    while (this.baseObject.workingURLs.length > 0) {
 
-    const response = await fetch(`${url}/get?key=${encodeURIComponent(key)}`);
+      const idx = this.baseObject.workingURLs[
+        Math.floor(Math.random() * this.baseObject.workingURLs.length)
+      ];
 
-    const data = await response.json();
+      const url = dukeToHttp(this.baseObject.baseURLs[idx]);
 
-    if (data.found) {
-      return data.value;
+      try {
+        const response = await fetch(
+          `${url}/get?key=${encodeURIComponent(key)}`
+        );
+
+        const data = await response.json();
+
+        if (data.found) {
+          return data.value;
+        }
+
+        throw new Error(data.error || "Key not found.");
+
+      } catch (e) {
+        if (this.baseObject.workingURLs.includes(idx)) {
+          console.log(`Node ${url} is down, removing from pool.`);
+          this.baseObject.workingURLs =
+            this.baseObject.workingURLs.filter(x => x !== idx);
+        }
+      }
     }
 
-    throw new Error(data.error || "Key not found.");
+    throw new Error("No healthy nodes are left.");
   }
 
   async PUT(key, value) {
-    if (value == undefined || key == undefined) {
-      throw new Error(key == undefined ? "Key Value can't be undefined!" : value == undefined ? "Value can't be undefined for PUT." : "");
-    }
     this.check();
 
-    const url = dukeToHttp(this.chooseRandomWorkingUrl());
+    while (this.baseObject.workingURLs.length > 0) {
 
-    const response = await fetch(`${url}/put`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          key,
-          value,
-        }),
-      },
-    );
+      const idx = this.baseObject.workingURLs[
+        Math.floor(Math.random() * this.baseObject.workingURLs.length)
+      ];
 
-    const data = await response.json();
+      const url = dukeToHttp(this.baseObject.baseURLs[idx]);
 
-    if (!data.success) {
-      throw new Error(data.error || "PUT failed.");
+      try {
+        const response = await fetch(`${url}/put`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ key, value }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "PUT failed.");
+        }
+
+        return true;
+
+      } catch (e) {
+        if (this.baseObject.workingURLs.includes(idx)) {
+          console.log(`Node ${url} is down, removing from pool.`);
+          this.baseObject.workingURLs =
+            this.baseObject.workingURLs.filter(x => x !== idx);
+        }
+      }
     }
 
-    return true;
+    throw new Error("No healthy nodes are left.");
   }
 
   async batch_GET(keysArr, BATCH_SIZE) {
@@ -145,13 +172,13 @@ export default class Duke {
     for (let i = 0; i < keysArr.length; i += BATCH_SIZE) {
       let batch = [];
 
-      for (let j = i; j < i + BATCH_SIZE; j++) {
+      for (let j = i; j < Math.min(i + BATCH_SIZE, keysArr.length); j++) {
         batch.push(
-          db.GET(keysArr[j])
+          this.GET(keysArr[j])
         );
       }
       let batch_response = await Promise.all(batch);
-      response = [...response, ...batch_response]
+      response.push(...batch_response)
     }
     return response
   }
@@ -165,14 +192,15 @@ export default class Duke {
     for (let i = 0; i < keysArr.length; i += BATCH_SIZE) {
       let batch = [];
 
-      for (let j = i; j < i + BATCH_SIZE; j++) {
+      for (let j = i; j < Math.min(i + BATCH_SIZE, keysArr.length); j++) {
         batch.push(
-          db.PUT(keysArr[j], valuesArr[j])
+          this.PUT(keysArr[j], valuesArr[j])
         );
       }
       let batch_response = await Promise.all(batch);
-      response = [...response, ...batch_response]
+      response.push(...batch_response)
     }
     return response
   }
+
 }
