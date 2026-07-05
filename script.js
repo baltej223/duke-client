@@ -22,6 +22,7 @@ for (let i = 0; i < 1000; i++) {
   vals.push(`val-${i}`);
 }
 
+db.debug(true);
 const doPut = process.argv.includes("--put");
 
 if (doPut) {

@@ -7,7 +7,12 @@ export default class Duke {
     this.baseObject = {
       baseURLs: [],
       workingURLs: [],
+      debugMode: false,
     };
+  }
+
+  debug(bool = false) {
+    this.baseObject.debugMode = bool;
   }
 
   seturl(...urls) {
@@ -59,6 +64,9 @@ export default class Duke {
     try {
       const response = await fetch(
         dukeToHttp(this.baseObject.baseURLs[urlIndex]) + "/health",
+        {
+          verbose: this.baseObject.debugMode
+        },
       );
 
       const data = await response.text();
@@ -104,7 +112,10 @@ export default class Duke {
 
       try {
         const response = await fetch(
-          `${url}/get?key=${encodeURIComponent(key)}`
+          `${url}/get?key=${encodeURIComponent(key)}`,
+          {
+            verbose: this.baseObject.debugMode
+          },
         );
 
         const data = await response.json();
@@ -116,6 +127,7 @@ export default class Duke {
         throw new Error(data.error || "Key not found.");
 
       } catch (e) {
+        console.error("[GET] The error is ", e);
         if (this.baseObject.workingURLs.includes(idx)) {
           console.log(`Node ${url} is down, removing from pool.`);
           this.baseObject.workingURLs =
@@ -145,6 +157,7 @@ export default class Duke {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ key, value }),
+          verbose: this.baseObject.debugMode,
         });
 
         const data = await response.json();
@@ -156,6 +169,8 @@ export default class Duke {
         return true;
 
       } catch (e) {
+        console.error("The error is:", e);
+
         if (this.baseObject.workingURLs.includes(idx)) {
           console.log(`Node ${url} is down, removing from pool.`);
           this.baseObject.workingURLs =
