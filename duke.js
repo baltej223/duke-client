@@ -78,7 +78,7 @@ export default class Duke {
   }
 
   async connect() {
-    console.log("connecting");
+    console.log("Connecting");
     this.baseObject.workingURLs = [];
 
     const total =
@@ -120,18 +120,24 @@ export default class Duke {
 
         const data = await response.json();
 
-        if (data.found) {
+        if (data.found && (data.error == undefined)) {
           return data.value;
         }
-
-        throw new Error(data.error || "Key not found.");
-
+        else if (data.error != undefined) {
+          if (data.error == "KEY NOT EXISTS")
+            throw new Error("KEY NOT EXISTS");
+        }
       } catch (e) {
-        console.error("[GET] The error is ", e);
-        if (this.baseObject.workingURLs.includes(idx)) {
-          console.log(`Node ${url} is down, removing from pool.`);
-          this.baseObject.workingURLs =
-            this.baseObject.workingURLs.filter(x => x !== idx);
+        console.log(e);
+        if (e.message != "KEY NOT EXISTS") { // Error message is different here.
+          if (this.baseObject.workingURLs.includes(idx)) {
+            console.log(`Node ${url} is down, removing from pool.`);
+            this.baseObject.workingURLs =
+              this.baseObject.workingURLs.filter(x => x !== idx);
+          }
+        }
+        else {
+          console.error(e);
         }
       }
     }
@@ -169,8 +175,6 @@ export default class Duke {
         return true;
 
       } catch (e) {
-        console.error("The error is:", e);
-
         if (this.baseObject.workingURLs.includes(idx)) {
           console.log(`Node ${url} is down, removing from pool.`);
           this.baseObject.workingURLs =

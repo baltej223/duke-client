@@ -17,12 +17,14 @@ await db.connect();
 const keys = [];
 const vals = [];
 
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 500; i++) {
+  //100
   keys.push(`key-${i}`);
   vals.push(`val-${i}`);
 }
 
-db.debug(true);
+db.debug(false);
+
 const doPut = process.argv.includes("--put");
 
 if (doPut) {
@@ -32,7 +34,8 @@ if (doPut) {
   console.log(result.length);
 } else {
   console.time("Batch GET time");
-  const result = await db.batch_GET(keys, 1000);
+  const result = await db.batch_GET(keys, 10);
   console.timeEnd("Batch GET time");
   console.log(result.length);
 }
+// If another node is down, it sends that message to client, and client thinks that the current node is down, and rmoves it from pool
