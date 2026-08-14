@@ -1,3 +1,5 @@
+
+
 # Duke JS Client
 
 A lightweight JavaScript client for interacting with a Duke distributed key-value cluster.
@@ -84,7 +86,7 @@ Error: Key not found.
 
 ## Health Checking
 
-## The client verifies node health using db.checkHealth()
+## The client verifies node health using duke.connect()
 
 ## Example
 
