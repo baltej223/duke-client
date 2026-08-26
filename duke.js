@@ -98,17 +98,16 @@ export default class Duke {
     return healthy > 0;
 
   }
-
   async GET(key) {
     this.check();
 
     while (this.baseObject.workingURLs.length > 0) {
-
       const idx = this.baseObject.workingURLs[
         Math.floor(Math.random() * this.baseObject.workingURLs.length)
       ];
 
       const url = dukeToHttp(this.baseObject.baseURLs[idx]);
+      let data;
 
       try {
         const response = await fetch(
@@ -117,27 +116,24 @@ export default class Duke {
             verbose: this.baseObject.debugMode
           },
         );
-
-        const data = await response.json();
-
-        if (data.found && (data.error == undefined)) {
-          return data.value;
-        }
-        else if (data.error != undefined) {
-          if (data.error == "KEY NOT EXISTS")
-            throw new Error("KEY NOT EXISTS");
-        }
+        data = await response.json();
       } catch (e) {
-        console.log(e);
-        if (e.message != "KEY NOT EXISTS") { // Error message is different here.
-          if (this.baseObject.workingURLs.includes(idx)) {
-            console.log(`Node ${url} is down, removing from pool.`);
-            this.baseObject.workingURLs =
-              this.baseObject.workingURLs.filter(x => x !== idx);
-          }
-        }
-        else {
-          console.error(e);
+        // Only actual network failures (node down, connection refused) land here.
+        console.log(`Node ${url} is down, removing from pool.`);
+        this.baseObject.workingURLs = this.baseObject.workingURLs.filter(x => x !== idx);
+        continue;
+        // Loop and failover to the next node
+      }
+
+      // If we reach here, the node is healthy and responded with JSON.
+      // Process business logic OUTSIDE.
+      if (data.found && data.error == undefined) {
+        return data.value;
+      } else if (data.error != undefined) {
+        if (data.error.includes("KEY NOT EXISTS") || data.error.includes("ErrKeyNotFound")) {
+          throw new Error("KEY NOT EXISTS");
+        } else {
+          throw new Error(data.error);
         }
       }
     }
@@ -149,12 +145,12 @@ export default class Duke {
     this.check();
 
     while (this.baseObject.workingURLs.length > 0) {
-
       const idx = this.baseObject.workingURLs[
         Math.floor(Math.random() * this.baseObject.workingURLs.length)
       ];
 
       const url = dukeToHttp(this.baseObject.baseURLs[idx]);
+      let data;
 
       try {
         const response = await fetch(`${url}/put`, {
@@ -165,28 +161,24 @@ export default class Duke {
           body: JSON.stringify({ key, value }),
           verbose: this.baseObject.debugMode,
         });
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || "PUT failed.");
-        }
-
-        return true;
-
+        data = await response.json();
       } catch (e) {
-        if (this.baseObject.workingURLs.includes(idx)) {
-          console.log(`Node ${url} is down, removing from pool.`);
-          this.baseObject.workingURLs =
-            this.baseObject.workingURLs.filter(x => x !== idx);
-        }
+        // Only actual network failures land here.
+        console.log(`Node ${url} is down, removing from pool.`);
+        this.baseObject.workingURLs = this.baseObject.workingURLs.filter(x => x !== idx);
+        continue; // Loop and failover to the next node
       }
+
+      // Process business logic OUTSIDE the catch block
+      if (!data.success) {
+        throw new Error(data.error || "PUT failed.");
+      }
+
+      return true;
     }
 
     throw new Error("No healthy nodes are left.");
-  }
-
-  async batch_GET(keysArr, BATCH_SIZE) {
+  } async batch_GET(keysArr, BATCH_SIZE) {
     let response = [];
     for (let i = 0; i < keysArr.length; i += BATCH_SIZE) {
       let batch = [];
@@ -196,7 +188,7 @@ export default class Duke {
           this.GET(keysArr[j])
         );
       }
-      let batch_response = await Promise.all(batch);
+      let batch_response = await Promise.allSettled(batch);
       response.push(...batch_response)
     }
     return response
