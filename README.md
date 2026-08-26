@@ -84,12 +84,12 @@ Error: Key not found.
 
 ## Health Checking
 
-## The client verifies node health using db.checkHealth()
+### The client verifies node health using db.checkHealth()
 
 ## Example
 
 ```js
-import Duke from "./duke.js";
+import Duke from "duke-client";
 
 const duke = new Duke();
 
@@ -111,55 +111,15 @@ const value = await duke.GET("username");
 
 console.log(value);
 ```
-
+## Batched PUTs/GETs
+### fn: batch_PUT(keyArr:Array<String>, valueArr:Array<String>, batch_size:Number)
+```js
+ const result = await db.batch_PUT(keys, vals, 1000);
+```
+### fn: batch_GET(keyArr:Array<String>, batch_size:Number)
+```js
+ const result = await db.batch_GET(keys, 1000);
+```
+For key not found, it will print an error; "KeyNotFound".
 ---
 
-## API
-
-### `seturl(...urls)`
-
-Registers Duke nodes.
-
-```js
-duke.seturl("duke://localhost:8000", "duke://localhost:8001");
-```
-
----
-
-### `connect()`
-
-Checks node health and builds the list of working nodes.
-
-Returns:
-
-```js
-boolean;
-```
-
----
-
-### `GET(key)`
-
-Retrieves a value.
-
-Returns:
-
-```js
-Promise<any>
-```
-
-Throws if the key is not found.
-
----
-
-### `PUT(key, value)`
-
-Stores a key-value pair.
-
-Returns:
-
-```js
-Promise<boolean>
-```
-
-Throws if the operation fails.
